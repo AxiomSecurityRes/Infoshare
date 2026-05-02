@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}알림{% endblock %}
+{% block content %}
+<div class="page-container narrow">
+  <h1 class="page-title">🔔 알림</h1>
+  {% if notifs %}
+  <ul class="notif-list">
+    {% for n in notifs %}
+    <li class="notif-item {% if not n.is_read %}unread{% endif %}">
+      <span class="notif-icon">
+        {% if n.type == 'like' %}❤{% elif n.type == 'comment' %}💬{% else %}🔔{% endif %}
+      </span>
+      <div class="notif-body">
+        <p>{{ n.message }}</p>
+        <small>{{ n.created_at|time_ago }}</small>
+      </div>
+      {% if n.link %}
+      <a href="{{ n.link }}" class="notif-link">보기 →</a>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-msg">알림이 없습니다.</p>
+  {% endif %}
+</div>
+{% endblock %}

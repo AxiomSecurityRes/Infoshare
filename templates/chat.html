@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}채팅 — 정보 공유 마당{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <h1 class="page-title">💬 채팅</h1>
+
+  <div class="chat-lobby">
+    <!-- 그룹 채팅방 -->
+    <section class="section-card">
+      <div class="section-head">
+        <h2 class="section-title"><span class="dot dot-blue"></span> 그룹 채팅방</h2>
+      </div>
+      <div class="room-grid">
+        {% for room in rooms %}
+        <a href="{{ url_for('chat_room', room_id=room.id) }}" class="room-card">
+          <div class="room-icon">💬</div>
+          <div class="room-info">
+            <strong>{{ room.name }}</strong>
+            <span class="room-meta">메시지 {{ room.msg_count }}개</span>
+          </div>
+          <span class="room-arrow">→</span>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- DM -->
+    <section class="section-card">
+      <div class="section-head">
+        <h2 class="section-title"><span class="dot dot-orange"></span> 1:1 메시지</h2>
+      </div>
+      {% if dm_rooms %}
+      <div class="room-grid">
+        {% for room in dm_rooms %}
+        <a href="{{ url_for('chat_room', room_id=room.id) }}" class="room-card">
+          <div class="room-icon">👤</div>
+          <div class="room-info">
+            <strong>{{ room.other_user }}</strong>
+            <span class="room-meta">DM</span>
+          </div>
+          <span class="room-arrow">→</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="empty-msg">아직 DM이 없습니다. 게시물 작성자에게 쪽지를 보내보세요.</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

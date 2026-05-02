@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}정보 공유 마당{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block extra_css %}{% endblock %}
+  <!-- MathJax 수식 렌더링 -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        packages: {'[+]': ['ams', 'boldsymbol']}
+      },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] },
+      startup: { typeset: false }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+</head>
+<body>
+
+<!-- ── 상단 네비게이션 ─────────────────────────────────── -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="{{ url_for('index') }}" class="brand">
+      <span class="brand-symbol">◈</span>
+      <span class="brand-text">정보공유마당</span>
+    </a>
+
+    <nav class="main-nav">
+      <a href="{{ url_for('board') }}" class="nav-link {% if request.endpoint and request.endpoint == 'board' %}active{% endif %}">게시판</a>
+      {% for cat in categories %}
+      <a href="{{ url_for('board', category=cat) }}" class="nav-link nav-cat">{{ cat }}</a>
+      {% endfor %}
+      <a href="{{ url_for('chat') }}" class="nav-link {% if request.endpoint and 'chat' in request.endpoint %}active{% endif %}">채팅</a>
+    </nav>
+
+    <div class="topbar-right">
+      {% if current_user %}
+        <a href="{{ url_for('notifications') }}" class="notif-bell">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          {% if notif_count > 0 %}<span class="badge">{{ notif_count }}</span>{% endif %}
+        </a>
+        <div class="user-menu">
+          <button class="user-btn">
+            <span class="avatar-circle">{{ current_user.username[0]|upper }}</span>
+            <span class="username-text">{{ current_user.username }}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+          </button>
+          <div class="user-dropdown">
+            <a href="{{ url_for('profile', username=current_user.username) }}">내 프로필</a>
+            <a href="{{ url_for('settings_profile') }}">설정</a>
+            <a href="{{ url_for('login_history') }}">로그인 내역</a>
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_panel') }}" class="admin-link">관리자 패널</a>
+            {% endif %}
+            <hr>
+            <a href="{{ url_for('logout') }}">로그아웃</a>
+          </div>
+        </div>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-ghost">로그인</a>
+        <a href="{{ url_for('register') }}" class="btn btn-primary">회원가입</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<!-- ── 플래시 메시지 ──────────────────────────────────── -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-container">
+  {% for category, message in messages %}
+  <div class="flash flash-{{ category }}">
+    <span>{{ message }}</span>
+    <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<!-- ── 메인 콘텐츠 ─────────────────────────────────────── -->
+<main class="main-content">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── 푸터 ──────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="brand-symbol">◈</span> 정보 공유 마당
+    </div>
+    <div class="footer-meta">
+      엔진: {{ engine_ver }} &nbsp;|&nbsp; © 2025 Information Sharing Plaza
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+/* 동적으로 추가된 요소의 수식 재렌더링 헬퍼 */
+function renderMath(el) {
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise(el ? [el] : undefined).catch(console.error);
+  }
+}
+document.addEventListener('DOMContentLoaded', () => renderMath());
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

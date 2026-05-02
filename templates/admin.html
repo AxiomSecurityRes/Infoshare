@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}관리자 패널{% endblock %}
+{% block content %}
+<div class="page-container">
+  <h1 class="page-title">🛠 관리자 패널</h1>
+  <div class="admin-stats">
+    <div class="admin-stat-card">
+      <div class="stat-big">{{ user_count }}</div>
+      <div class="stat-label">전체 회원</div>
+    </div>
+    <div class="admin-stat-card">
+      <div class="stat-big">{{ post_count }}</div>
+      <div class="stat-label">게시물</div>
+    </div>
+    <div class="admin-stat-card">
+      <div class="stat-big">{{ today_logins }}</div>
+      <div class="stat-label">오늘 로그인</div>
+    </div>
+  </div>
+  <div class="admin-links">
+    <a href="{{ url_for('admin_users') }}" class="btn btn-primary">회원 관리</a>
+    <a href="{{ url_for('board') }}" class="btn btn-ghost">게시판 보기</a>
+  </div>
+</div>
+{% endblock %}

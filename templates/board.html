@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}게시판 — 정보 공유 마당{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <!-- ── 상단 필터 바 ──────────────────────────────── -->
+  <div class="board-header">
+    <h1 class="page-title">
+      {% if category %}{{ category }}{% else %}전체 게시판{% endif %}
+    </h1>
+    {% if current_user %}
+    <a href="{{ url_for('post_new') }}" class="btn btn-primary">✏ 글쓰기</a>
+    {% endif %}
+  </div>
+
+  <!-- 카테고리 탭 -->
+  <div class="cat-tabs">
+    <a href="{{ url_for('board') }}" class="cat-tab {% if not category %}active{% endif %}">전체</a>
+    {% for cat in categories %}
+    <a href="{{ url_for('board', category=cat, q=keyword, sort=sort_by) }}"
+       class="cat-tab {% if category == cat %}active{% endif %}">{{ cat }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- 검색 + 정렬 -->
+  <form class="search-bar" method="GET" action="{{ url_for('board') }}">
+    <input type="hidden" name="category" value="{{ category }}">
+    <input type="text" name="q" value="{{ keyword }}" placeholder="검색어 입력..." class="search-input">
+    <select name="sort" class="sort-select">
+      <option value="0" {% if sort_by==0 %}selected{% endif %}>최신순</option>
+      <option value="1" {% if sort_by==1 %}selected{% endif %}>조회순</option>
+      <option value="2" {% if sort_by==2 %}selected{% endif %}>좋아요순</option>
+      <option value="3" {% if sort_by==3 %}selected{% endif %}>인기순</option>
+    </select>
+    <button type="submit" class="btn btn-primary">검색</button>
+    {% if keyword %}
+    <a href="{{ url_for('board', category=category) }}" class="btn btn-ghost">초기화</a>
+    {% endif %}
+  </form>
+
+  <!-- ── 게시물 테이블 ─────────────────────────────── -->
+  {% if posts %}
+  <div class="post-table-wrap">
+    <table class="post-table">
+      <thead>
+        <tr>
+          <th class="col-cat">분류</th>
+          <th class="col-title">제목</th>
+          <th class="col-author">작성자</th>
+          <th class="col-date">날짜</th>
+          <th class="col-views">조회</th>
+          <th class="col-likes">좋아요</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in posts %}
+        <tr class="post-row">
+          <td><span class="cat-badge cat-{{ p.category }}">{{ p.category }}</span></td>
+          <td class="title-cell">
+            <a href="{{ url_for('post_view', pid=p.id) }}" class="post-title-link">
+              {{ p.title }}
+            </a>
+            {% if p.cmt_cnt > 0 %}
+            <span class="cmt-count">[{{ p.cmt_cnt }}]</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('profile', username=p.username) }}" class="author-link">
+              {{ p.username }}
+            </a>
+          </td>
+          <td class="date-cell">{{ p.created_at|ts_to_date }}</td>
+          <td class="num-cell">{{ p.views }}</td>
+          <td class="num-cell">{{ p.likes }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 페이지네이션 -->
+  <div class="pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('board', category=category, q=keyword, sort=sort_by, page=page-1) }}" class="page-btn">‹ 이전</a>
+    {% endif %}
+
+    {% set start_page = [1, page-2]|max %}
+    {% set end_page   = [total_pages, page+2]|min %}
+    {% for p in range(start_page, end_page+1) %}
+    <a href="{{ url_for('board', category=category, q=keyword, sort=sort_by, page=p) }}"
+       class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+
+    {% if page < total_pages %}
+    <a href="{{ url_for('board', category=category, q=keyword, sort=sort_by, page=page+1) }}" class="page-btn">다음 ›</a>
+    {% endif %}
+  </div>
+
+  <p class="result-count">총 {{ total }}건 / {{ total_pages }}페이지</p>
+
+  {% else %}
+  <div class="empty-board">
+    <p>게시물이 없습니다.</p>
+    {% if current_user %}
+    <a href="{{ url_for('post_new') }}" class="btn btn-primary">첫 게시물 작성하기</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

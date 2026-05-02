@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user.username }} 프로필{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <div class="profile-card">
+    <div class="profile-avatar-big">{{ profile_user.username[0]|upper }}</div>
+    <div class="profile-info">
+      <h1 class="profile-name">{{ profile_user.username }}</h1>
+      <p class="profile-bio">{{ profile_user.bio or '소개가 없습니다.' }}</p>
+      <div class="profile-meta">
+        <span>가입일: {{ profile_user.created_at|ts_to_date }}</span>
+        <span>마지막 로그인: {{ profile_user.last_login|ts_to_dt }}</span>
+        {% if profile_user.role == 'admin' %}<span class="admin-badge">관리자</span>{% endif %}
+      </div>
+      {% if current_user and current_user.id != profile_user.id %}
+      <form method="POST" action="{{ url_for('start_dm', target_id=profile_user.id) }}" style="margin-top:1rem">
+        <button type="submit" class="btn btn-primary">💬 쪽지 보내기</button>
+      </form>
+      {% endif %}
+      {% if current_user and current_user.id == profile_user.id %}
+      <a href="{{ url_for('settings_profile') }}" class="btn btn-ghost" style="margin-top:1rem">⚙ 프로필 수정</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="section-card" style="margin-top:2rem">
+    <div class="section-head">
+      <h2 class="section-title">최근 게시물</h2>
+    </div>
+    {% if posts %}
+    <ul class="post-list">
+      {% for p in posts %}
+      <li class="post-item">
+        <span class="cat-badge cat-{{ p.category }}">{{ p.category }}</span>
+        <a href="{{ url_for('post_view', pid=p.id) }}" class="post-title-link">{{ p.title }}</a>
+        <div class="post-meta">
+          <span>{{ p.created_at|time_ago }}</span>
+          <span>👁 {{ p.views }}</span>
+          <span>❤ {{ p.likes }}</span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-msg">작성한 게시물이 없습니다.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

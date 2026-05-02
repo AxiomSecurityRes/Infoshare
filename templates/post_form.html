@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}{% if mode=='edit' %}게시물 수정{% else %}글쓰기{% endif %} — 정보 공유 마당{% endblock %}
+
+{% block content %}
+<div class="page-container narrow">
+  <h1 class="page-title">{% if mode=='edit' %}게시물 수정{% else %}새 글 작성{% endif %}</h1>
+
+  <form method="POST" class="form-card">
+    <div class="form-group">
+      <label class="form-label">카테고리</label>
+      <select name="category" class="form-select" required>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if (mode=='edit' and post.category==cat) or (mode=='new' and cat=='자유') %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">제목</label>
+      <input type="text" name="title" class="form-input"
+             value="{{ post.title if mode=='edit' else '' }}"
+             placeholder="제목을 입력하세요" required maxlength="200">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">내용</label>
+
+      <div class="math-toolbar">
+        <span class="math-toolbar-label">수식:</span>
+        <button type="button" class="math-btn" data-tex="$[cursor]$" title="인라인 수식  $…$">$ … $</button>
+        <button type="button" class="math-btn" data-tex="$$\n[cursor]\n$$" title="블록 수식  $$…$$">$$ … $$</button>
+        <button type="button" class="math-btn" data-tex="\frac{[cursor]}{}" title="분수">\frac</button>
+        <button type="button" class="math-btn" data-tex="\sqrt{[cursor]}" title="제곱근">\sqrt</button>
+        <button type="button" class="math-btn" data-tex="^{[cursor]}" title="위첨자">xⁿ</button>
+        <button type="button" class="math-btn" data-tex="_{[cursor]}" title="아래첨자">xₙ</button>
+        <button type="button" class="math-btn" data-tex="\sum_{n=1}^{\infty} [cursor]" title="시그마">\sum</button>
+        <button type="button" class="math-btn" data-tex="\int_{a}^{b} [cursor]" title="적분">\int</button>
+        <button type="button" class="math-btn" data-tex="\lim_{x \to [cursor]}" title="극한">\lim</button>
+        <button type="button" class="math-btn" data-tex="\begin{pmatrix} [cursor] & \\ & \end{pmatrix}" title="행렬">행렬</button>
+        <button type="button" class="math-btn" data-tex="\vec{[cursor]}" title="벡터">\vec</button>
+        <button type="button" class="math-btn" data-tex="\infty" title="무한대">∞</button>
+        <button type="button" class="math-btn" data-tex="\alpha" title="α">α</button>
+        <button type="button" class="math-btn" data-tex="\beta" title="β">β</button>
+        <button type="button" class="math-btn" data-tex="\pi" title="π">π</button>
+        <button type="button" class="math-btn" data-tex="\theta" title="θ">θ</button>
+        <button type="button" class="math-btn math-btn-preview" id="preview-toggle">👁 미리보기</button>
+      </div>
+
+      <div class="content-editor-wrap">
+        <textarea name="content" id="content-ta" class="form-textarea" rows="16"
+                  placeholder="내용을 입력하세요...&#10;수식 예시: 인라인 $x^2 + y^2 = r^2$ 또는 블록 $$\frac{d}{dx}e^x = e^x$$" required>{{ post.content if mode=='edit' else '' }}</textarea>
+        <div id="math-preview" class="math-preview" style="display:none">
+          <div class="math-preview-label">📐 미리보기</div>
+          <div id="math-preview-body" class="math-preview-body"></div>
+        </div>
+      </div>
+      <div class="char-counter"><span id="char-count">0</span> / 10000자 &nbsp;·&nbsp; <span class="math-hint">수식: <code>$인라인$</code> · <code>$$블록$$</code></span></div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary btn-lg">
+        {% if mode=='edit' %}수정 완료{% else %}게시물 등록{% endif %}
+      </button>
+      {% if mode=='edit' %}
+      <a href="{{ url_for('post_view', pid=post.id) }}" class="btn btn-ghost btn-lg">취소</a>
+      {% else %}
+      <a href="{{ url_for('board') }}" class="btn btn-ghost btn-lg">취소</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    packages: {'[+]': ['ams']}
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+  }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+
+<script>
+// ── 글자 수 카운터 ──────────────────────────────────────────────
+const ta      = document.getElementById('content-ta');
+const counter = document.getElementById('char-count');
+function updateCount() {
+  counter.textContent = ta.value.length;
+  counter.style.color = ta.value.length > 9000 ? 'var(--danger)' : '';
+}
+ta.addEventListener('input', updateCount);
+updateCount();
+
+// ── 수식 툴바: 커서 위치에 LaTeX 삽입 ──────────────────────────
+document.querySelectorAll('.math-btn[data-tex]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tpl   = btn.dataset.tex;
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    const sel   = ta.value.slice(start, end);
+    const insert = tpl.replace('[cursor]', sel || '');
+    ta.value = ta.value.slice(0, start) + insert + ta.value.slice(end);
+    const curPos = start + tpl.indexOf('[cursor]');
+    ta.setSelectionRange(curPos, curPos + (sel.length || 0));
+    ta.focus();
+    updateCount();
+    if (document.getElementById('math-preview').style.display !== 'none') updatePreview();
+  });
+});
+
+// ── MathJax 렌더링 함수 추가 ──────────────────────────────────────
+function renderMath(element) {
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    MathJax.typesetClear([element]);
+    MathJax.typesetPromise([element]).catch((err) => console.log('MathJax error: ', err));
+  }
+}
+
+// ── 미리보기 ────────────────────────────────────────────────────
+let previewOn = false;
+const previewBox  = document.getElementById('math-preview');
+const previewBody = document.getElementById('math-preview-body');
+const toggleBtn   = document.getElementById('preview-toggle');
+
+function updatePreview() {
+  // HTML 태그 방지(이스케이프) 및 줄바꿈 처리만 수행
+  // 복잡한 정규식 없이 MathJax가 원본 텍스트 노드에서 $ 및 $$를 자동 인식하도록 수정
+  let raw = ta.value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  raw = raw.replace(/\n/g, '<br>');
+  
+  previewBody.innerHTML = raw;
+  renderMath(previewBody);
+}
+
+toggleBtn.addEventListener('click', () => {
+  previewOn = !previewOn;
+  previewBox.style.display = previewOn ? 'block' : 'none';
+  toggleBtn.classList.toggle('active', previewOn);
+  if (previewOn) updatePreview();
+});
+ta.addEventListener('input', () => { if (previewOn) updatePreview(); });
+</script>
+{% endblock %}

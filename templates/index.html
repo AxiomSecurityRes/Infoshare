@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}정보 공유 마당 — 메인{% endblock %}
+
+{% block content %}
+<!-- ── 히어로 ──────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <h1 class="hero-title">
+        <span class="line1">지식을 나누고</span>
+        <span class="line2">함께 성장하는</span>
+        <span class="line3 accent">정보 공유 마당</span>
+      </h1>
+      <p class="hero-sub">자유롭게 질문하고, 답하고, 토론하세요.</p>
+      <div class="hero-actions">
+        <a href="{{ url_for('board') }}" class="btn btn-primary btn-lg">게시판 보기</a>
+        {% if not current_user %}
+        <a href="{{ url_for('register') }}" class="btn btn-outline btn-lg">무료 가입</a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="hero-stats">
+      {% for cat, count in cat_stats.items() %}
+      <a href="{{ url_for('board', category=cat) }}" class="stat-card">
+        <span class="stat-num">{{ count }}</span>
+        <span class="stat-label">{{ cat }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── 메인 그리드 ─────────────────────────────────── -->
+<div class="home-grid">
+  <!-- 최신 게시물 -->
+  <section class="section-card">
+    <div class="section-head">
+      <h2 class="section-title"><span class="dot dot-blue"></span> 최신 게시물</h2>
+      <a href="{{ url_for('board') }}" class="see-all">전체 보기 →</a>
+    </div>
+    {% if recent %}
+    <ul class="post-list">
+      {% for p in recent %}
+      <li class="post-item">
+        <span class="cat-badge cat-{{ p.category }}">{{ p.category }}</span>
+        <a href="{{ url_for('post_view', pid=p.id) }}" class="post-title-link">{{ p.title }}</a>
+        <div class="post-meta">
+          <span>{{ p.username }}</span>
+          <span>{{ p.created_at|time_ago }}</span>
+          <span>👁 {{ p.views }}</span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-msg">아직 게시물이 없습니다.</p>
+    {% endif %}
+  </section>
+
+  <!-- 인기 게시물 -->
+  <section class="section-card">
+    <div class="section-head">
+      <h2 class="section-title"><span class="dot dot-orange"></span> 인기 게시물</h2>
+    </div>
+    {% if popular %}
+    <ol class="popular-list">
+      {% for p in popular %}
+      <li class="popular-item">
+        <span class="rank">{{ loop.index }}</span>
+        <div class="popular-body">
+          <a href="{{ url_for('post_view', pid=p.id) }}" class="post-title-link">{{ p.title }}</a>
+          <div class="post-meta">
+            <span>{{ p.username }}</span>
+            <span>❤ {{ p.likes }}</span>
+            <span>👁 {{ p.views }}</span>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <p class="empty-msg">아직 게시물이 없습니다.</p>
+    {% endif %}
+  </section>
+</div>
+
+<!-- ── 글쓰기 CTA ─────────────────────────────────── -->
+{% if current_user %}
+<section class="cta-bar">
+  <span>오늘은 어떤 이야기를 공유하시겠어요?</span>
+  <a href="{{ url_for('post_new') }}" class="btn btn-primary">✏ 글쓰기</a>
+</section>
+{% endif %}
+{% endblock %}

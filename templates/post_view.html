@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} — 정보 공유 마당{% endblock %}
+
+{% block content %}
+<style>
+  /* ── 가독성 및 수식 스타일링 ── */
+  .post-body, .cmt-body {
+    line-height: 1.8; /* 줄 간격을 넓혀 텍스트와 수식 간의 가독성 상승 */
+    font-size: 1.05rem;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap; /* 줄바꿈 유지 */
+  }
+  
+  /* 길고 복잡한 디스플레이 수식 가로 스크롤 허용 */
+  mjx-container[display="true"] {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5em 0;
+    max-width: 100%;
+  }
+  
+  /* 수식 스크롤바 디자인 */
+  mjx-container[display="true"]::-webkit-scrollbar {
+    height: 6px;
+  }
+  mjx-container[display="true"]::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+</style>
+
+<div class="page-container post-view-page">
+
+  <article class="post-article">
+    <div class="post-top">
+      <span class="cat-badge cat-{{ post.category }}">{{ post.category }}</span>
+      <h1 class="post-h1">{{ post.title }}</h1>
+      <div class="post-info-bar">
+        <a href="{{ url_for('profile', username=post.username) }}" class="author-avatar-link">
+          <span class="avatar-circle">{{ post.username[0]|upper }}</span>
+          <strong>{{ post.username }}</strong>
+        </a>
+        <span class="sep">·</span>
+        <time>{{ post.created_at|ts_to_dt }}</time>
+        {% if post.updated_at != post.created_at %}
+        <span class="edited-badge">(수정됨)</span>
+        {% endif %}
+        <span class="sep">·</span>
+        <span>👁 {{ post.views }}회</span>
+        <span>❤ <span id="like-count">{{ post.likes }}</span></span>
+      </div>
+    </div>
+
+    <div class="post-body">{{ post.content }}</div>
+
+    <div class="post-actions">
+      {% if current_user %}
+      <button id="like-btn" class="btn {% if liked %}btn-liked{% else %}btn-outline{% endif %}"
+              data-pid="{{ post.id }}" onclick="toggleLike(this)">
+        {% if liked %}❤ 좋아요 취소{% else %}🤍 좋아요{% endif %}
+      </button>
+      {% endif %}
+
+      {% if current_user and (current_user.id == post.user_id or current_user.role == 'admin') %}
+      <a href="{{ url_for('post_edit', pid=post.id) }}" class="btn btn-ghost">✏ 수정</a>
+      <form method="POST" action="{{ url_for('post_delete', pid=post.id) }}"
+            onsubmit="return confirm('정말 삭제하시겠습니까?')" style="display:inline">
+        <button type="submit" class="btn btn-danger">🗑 삭제</button>
+      </form>
+      {% endif %}
+
+      {% if current_user and current_user.id != post.user_id %}
+      <form method="POST" action="{{ url_for('start_dm', target_id=post.user_id) }}" style="display:inline">
+        <button type="submit" class="btn btn-ghost">💬 쪽지 보내기</button>
+      </form>
+      {% endif %}
+
+      <a href="{{ url_for('board', category=post.category) }}" class="btn btn-ghost">← 목록</a>
+    </div>
+  </article>
+
+  <section class="comments-section">
+    <h2 class="comments-title">댓글 {{ comments|length }}개</h2>
+
+    {% if comments %}
+    <div class="comment-list">
+      {% for c in comments %}
+      {% if not c.is_deleted %}
+      <div class="comment-item {% if c.parent_id %}comment-reply{% endif %}" id="cmt-{{ c.id }}">
+        {% if c.parent_id %}<span class="reply-arrow">↳</span>{% endif %}
+        <div class="cmt-header">
+          <a href="{{ url_for('profile', username=c.username) }}" class="cmt-author">
+            <span class="avatar-circle sm">{{ c.username[0]|upper }}</span>
+            {{ c.username }}
+          </a>
+          <time class="cmt-time">{{ c.created_at|time_ago }}</time>
+        </div>
+        <p class="cmt-body">{{ c.content }}</p>
+        <div class="cmt-actions">
+          {% if current_user %}
+          <button class="cmt-reply-btn" onclick="showReplyForm({{ c.id }})">↩ 답글</button>
+          {% endif %}
+          {% if current_user and (current_user.id == c.user_id or current_user.role == 'admin') %}
+          <form method="POST" action="{{ url_for('comment_delete', cid=c.id) }}"
+                onsubmit="return confirm('댓글을 삭제하시겠습니까?')" style="display:inline">
+            <button type="submit" class="cmt-del-btn">삭제</button>
+          </form>
+          {% endif %}
+        </div>
+        {% if current_user %}
+        <div id="reply-form-{{ c.id }}" class="reply-form-box" style="display:none">
+          <form method="POST" action="{{ url_for('comment_add', pid=post.id) }}">
+            <input type="hidden" name="parent_id" value="{{ c.id }}">
+            <textarea name="content" class="cmt-textarea" rows="2" placeholder="답글을 입력하세요..." required></textarea>
+            <button type="submit" class="btn btn-primary btn-sm">답글 등록</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="hideReplyForm({{ c.id }})">취소</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="comment-item comment-deleted">
+        <p class="deleted-msg">삭제된 댓글입니다.</p>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-msg">첫 댓글을 남겨보세요!</p>
+    {% endif %}
+
+    {% if current_user %}
+    <div class="new-comment-box">
+      <h3>댓글 작성</h3>
+      <form method="POST" action="{{ url_for('comment_add', pid=post.id) }}">
+        <textarea name="content" class="cmt-textarea" rows="4"
+                  placeholder="댓글을 입력하세요..." required></textarea>
+        <button type="submit" class="btn btn-primary">댓글 등록</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="login-prompt">
+      <a href="{{ url_for('login') }}">로그인</a>하면 댓글을 작성할 수 있습니다.
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    packages: {'[+]': ['ams']} // AMS math 허용으로 더 많은 수학 기호 지원
+  },
+  options: {
+    // 특정 클래스 제한을 없애고 전체 페이지를 스캔하되, 입력창과 코드 블럭만 제외하도록 수정
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+  }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+
+<script>
+async function toggleLike(btn) {
+  const pid = btn.dataset.pid;
+  const resp = await fetch(`/post/${pid}/like`, { method: 'POST', headers: {'X-Requested-With':'XMLHttpRequest'} });
+  const data = await resp.json();
+  document.getElementById('like-count').textContent = data.likes;
+  if (data.liked) {
+    btn.textContent = '❤ 좋아요 취소';
+    btn.classList.remove('btn-outline'); btn.classList.add('btn-liked');
+  } else {
+    btn.textContent = '🤍 좋아요';
+    btn.classList.remove('btn-liked'); btn.classList.add('btn-outline');
+  }
+}
+
+function showReplyForm(id) {
+  document.getElementById('reply-form-' + id).style.display = 'block';
+}
+
+function hideReplyForm(id) {
+  document.getElementById('reply-form-' + id).style.display = 'none';
+}
+
+// 명시적인 렌더링이 필요한 경우를 위한 함수 (동적 댓글 로딩 등 확장 대비)
+function renderMath(element) {
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    MathJax.typesetClear([element]);
+    MathJax.typesetPromise([element]).catch((err) => console.log('MathJax error: ', err));
+  }
+}
+</script>
+{% endblock %}

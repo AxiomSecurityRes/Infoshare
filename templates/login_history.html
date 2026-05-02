@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}로그인 내역 — 정보 공유 마당{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <h1 class="page-title">🔐 로그인 내역</h1>
+  <p class="page-sub">최근 50건의 로그인 기록입니다.</p>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>일시</th>
+          <th>IP 주소</th>
+          <th>브라우저 / OS</th>
+          <th>결과</th>
+          <th>사유</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>{{ log.created_at|ts_to_dt }}</td>
+          <td class="ip-cell">{{ log.ip }}</td>
+          <td class="ua-cell" title="{{ log.user_agent }}">{{ log.user_agent[:60] }}{% if log.user_agent|length > 60 %}...{% endif %}</td>
+          <td>
+            {% if log.success %}
+            <span class="badge badge-success">✓ 성공</span>
+            {% else %}
+            <span class="badge badge-danger">✗ 실패</span>
+            {% endif %}
+          </td>
+          <td>{{ log.reason or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if not logs %}
+  <p class="empty-msg">로그인 내역이 없습니다.</p>
+  {% endif %}
+</div>
+{% endblock %}

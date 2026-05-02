@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} 오류{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="error-code">{{ code }}</div>
+  <div class="error-msg">{{ message }}</div>
+  <a href="{{ url_for('index') }}" class="btn btn-primary">홈으로 돌아가기</a>
+</div>
+{% endblock %}
